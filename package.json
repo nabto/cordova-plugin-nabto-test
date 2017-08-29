@@ -1,0 +1,23 @@
+{
+  "name": "cordova-plugin-nabto-tests",
+  "version": "2.1.6",
+  "description": "Cordova Plugin Nabto",
+  "cordova": {
+    "id": "cordova-plugin-nabto-tests",
+    "platforms": [
+      "android",
+      "ios"
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nabto/cordova-plugin-nabto"
+  },
+  "keywords": [
+    "ecosystem:cordova",
+    "cordova-android",
+    "cordova-ios"
+  ],
+  "author": "Nabto ApS",
+  "license": "MIT"
+}
