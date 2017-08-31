@@ -317,8 +317,21 @@ exports.defineAutoTests = function () {
       nabto.version(function(error, version) {
         expect(error).not.toBeDefined();
         expect(version[0]).toBe('4');
-        expect(version.indexOf('.')).toBe(1);
-        expect(version).toBeGreaterThan(2);
+        expect(version[1]).toBe('.');
+        expect(version[2]).toBeDefined();
+        expect(version[3]).not.toBeDefined();
+        done();
+      });
+    });
+
+    it('can return nabto client version string', function(done) {
+      nabto.versionString(function(error, version) {
+        expect(error).not.toBeDefined();
+        expect(version[0]).toBe('4');
+        expect(version[1]).toBe('.');
+        expect(version[2]).toBeDefined();
+        expect(version[3]).toBe('.');
+        expect(version[4]).toBeDefined();
         done();
       });
     });
