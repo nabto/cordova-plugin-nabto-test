@@ -375,7 +375,7 @@ exports.defineAutoTests = function () {
 
 //  describe('Debug', function () {
   
-  it('create signed certificate', function(done){
+  it('creates signed certificate', function(done){
     nabto.startup(function(error) {
       // exercise setOption (just re-construct defaults)
       nabto.setOption("urlPortalDomain", "com", function(error) {
@@ -431,11 +431,92 @@ exports.defineAutoTests = function () {
         });
       });
     });
-    
-    //  });
   });
 
-};
+  function assertErrorIsInvalidTunnel(error) {
+    expect(error).toBeDefined();
+    expect(error.category).toBe(NabtoError.Category.API);
+    expect(error.code).toBe(NabtoError.Code.API_INVALID_TUNNEL);
+  }
+
+  function assertErrorIsInvalidInput(error) {
+    expect(error).toBeDefined();
+    expect(error.category).toBe(NabtoError.Category.WRAPPER);
+    expect(error.code).toBe(NabtoError.Code.CDV_INVALID_ARG);
+  }
+
+  it('handles offline tunnel host and retrieves correct error code ', function(done) {
+    nabto.startupAndOpenProfile('guest', 'blank', function(error) {
+      expect(error).not.toBeDefined();
+      nabto.tunnelOpenTcp(new Date() + "veryoffline.nabto.net", 80, function(error, tunnel) {
+        assertErrorIsInvalidTunnel(error);
+        done();
+      });
+    });
+  });
+
+  it('handles empty tunnel host input', function(done) {
+    nabto.startupAndOpenProfile('guest', 'blank', function(error) {
+      expect(error).not.toBeDefined();
+      nabto.tunnelOpenTcp("", 80, function(error, tunnel) {
+        assertErrorIsInvalidInput(error);
+        done();
+      });
+    });
+  });
+    
+  it('handles bad tunnel port input 1', function(done) {
+    nabto.startupAndOpenProfile('guest', 'blank', function(error) {
+      expect(error).not.toBeDefined();
+      nabto.tunnelOpenTcp("streamdemo.nabto.net", -80, function(error, tunnel) {
+        assertErrorIsInvalidInput(error);
+        done();
+      });
+    });
+  });
+
+  it('handles bad tunnel port input 2', function(done) {
+    nabto.startupAndOpenProfile('guest', 'blank', function(error) {
+      expect(error).not.toBeDefined();
+      nabto.tunnelOpenTcp("streamdemo.nabto.net", "bad", function(error, tunnel) {
+        assertErrorIsInvalidInput(error);
+        done();
+      });
+    });
+  });
+
+
+  it('handles get port on an invalid tunnel', function(done) {
+    nabto.startupAndOpenProfile('guest', 'blank', function(error) {
+      nabto.tunnelPort("foo", function(error) {
+        assertErrorIsInvalidTunnel(error);
+        nabto.tunnelPort("", function(error) {
+          assertErrorIsInvalidTunnel(error);
+          nabto.tunnelPort(undefined, function(error) {
+            assertErrorIsInvalidTunnel(error);
+            done();
+          });
+        });
+      });
+    });
+  });
+    
+  it('handles get state on an invalid tunnel', function(done) {
+    nabto.startupAndOpenProfile('guest', 'blank', function(error) {
+      nabto.tunnelState("foo", function(error) {
+        expect(error).toBeDefined();
+        nabto.tunnelState("", function(error) {
+          expect(error).toBeDefined();
+          nabto.tunnelState(undefined, function(error) {
+            expect(error).toBeDefined();
+            done();
+          });
+        });
+      });
+    });
+  });
+
+}; // suite
 
 exports.defineManualTests = function(contentEl, createActionButton) {
   // PrepareInvoke tests use free devices if not specified
