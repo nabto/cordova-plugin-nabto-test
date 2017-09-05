@@ -448,7 +448,7 @@ exports.defineAutoTests = function () {
   it('handles offline tunnel host and retrieves correct error code ', function(done) {
     nabto.startupAndOpenProfile('guest', 'blank', function(error) {
       expect(error).not.toBeDefined();
-      nabto.tunnelOpenTcp(new Date() + "veryoffline.nabto.net", 80, function(error, tunnel) {
+      nabto.tunnelOpenTcp(new Date().getMilliseconds() + "veryoffline.nabto.net", 80, function(error, tunnel) {
         assertErrorIsInvalidTunnel(error);
         done();
       });
