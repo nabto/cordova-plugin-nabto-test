@@ -377,14 +377,20 @@ exports.defineAutoTests = function () {
   
   it('creates signed certificate', function(done){
     nabto.startup(function(error) {
-      // exercise setOption (just re-construct defaults)
+      // exercise setOption (set bad value, re-construct defaults)
       nabto.setOption("urlPortalDomain", "com", function(error) {
         expect(error).not.toBeDefined();
-        nabto.setOption("urlPortalHostName", "webservice.nabto", function(error) {
+        nabto.setOption("urlPortalHostName", "www.google", function(error) {
           expect(error).not.toBeDefined();
           nabto.createSignedKeyPair("stresstest@nabto.com", "12345678", function(error) {
-            expect(error).not.toBeDefined();
-              done();
+            expect(error).toBeDefined(); // expect fail: google.com cannot issue cert
+            nabto.setOption("urlPortalHostName", "webservice.nabto", function(error) {
+              expect(error).not.toBeDefined();
+              nabto.createSignedKeyPair("stresstest@nabto.com", "12345678", function(error) {
+                expect(error).not.toBeDefined(); // expect ok after setting back to default
+                done();
+              });
+            });
           });
         });
       });
