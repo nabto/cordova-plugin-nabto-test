@@ -379,7 +379,9 @@ exports.defineAutoTests = function () {
     nabto.startup(function(error) {
       // exercise setOption (just re-construct defaults)
       nabto.setOption("urlPortalDomain", "com", function(error) {
+        expect(error).not.toBeDefined();
         nabto.setOption("urlPortalHostName", "webservice.nabto", function(error) {
+          expect(error).not.toBeDefined();
           nabto.createSignedKeyPair("stresstest@nabto.com", "12345678", function(error) {
             expect(error).not.toBeDefined();
               done();
