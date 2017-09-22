@@ -397,6 +397,48 @@ exports.defineAutoTests = function () {
     });
   });
 
+  it('creates a self-signed certificate and can remove it again', function(done) {
+    let id = 'user_' + new Date().getMilliseconds();
+    let password = 'secret';
+    nabto.startupAndOpenProfile(id, password, function(error) {
+      expect(error).toBeDefined();
+      expect(error.code).toBe(NabtoError.Code.API_OPEN_CERT_OR_PK_FAILED);
+      nabto.createKeyPair(id, password, function(error) {
+        expect(error).not.toBeDefined();
+        nabto.startupAndOpenProfile(id, password, function(error) {
+          expect(error).not.toBeDefined();
+          nabto.removeKeyPair(id, function(error) {
+            nabto.startupAndOpenProfile(id, password, function(error) {
+              expect(error).toBeDefined();
+              expect(error.code).toBe(NabtoError.Code.API_OPEN_CERT_OR_PK_FAILED);
+              done();
+            });
+          });
+        });
+      });
+    });
+  });
+  
+  it('handles certs with plus signs in the name (trigger NABTO-1xxx)', function(done) {
+    let id = 'foo+bar@baz-' + + new Date().getMilliseconds() + '.org' ;
+    let password = 'secret';
+    nabto.createKeyPair(id, password, function(error) {
+      nabto.startupAndOpenProfile(id, password, function(error) {
+        expect(error).not.toBeDefined();
+        nabto.removeKeyPair(id, function(error) {
+          expect(error).not.toBeDefined();
+          done();
+        });
+      });
+    });
+  });
+
+  it('sets basestation auth info', function(done) {
+    nabto.startupAndOpenProfile('guest', 'blank', function(error) {
+      expect(error).not.toBeDefined();
+      nabto.setBaseStationAuthJson("")
+  });
+
   
   it('opens a tunnel to demo host with valid parameters and closes tunnel again', function(done) {
     nabto.startupAndOpenProfile('guest', 'blank', function(error) {
