@@ -31,6 +31,7 @@ function createProject() {
         cd $DIR
         cordova create $DIR com.example.$id $PROJ
         cordova plugin add https://github.com/maverickmishra/cordova-plugin-test-framework.git
+        cordova plugin add cordova-plugin-device
         local f=`mktemp`
         cat $DIR/config.xml | sed 's/index.html/cdvtests\/index.html/' > $f
         cp $f $DIR/config.xml
@@ -123,8 +124,13 @@ function buildAndRun() {
     uninstallPlugins
     installPlugins
     
-    cordova build --emulator $PLATFORM 
-    cordova emulate $PLATFORM
+    cordova build --emulator $PLATFORM
+    
+    if [ "$PLATFORM" == "ios" ]; then
+        cordova run ios --target iPad-Air-2
+    else
+        cordova emulate $PLATFORM
+    fi
 }
 
 time {

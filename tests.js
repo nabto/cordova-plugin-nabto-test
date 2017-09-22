@@ -433,11 +433,11 @@ exports.defineAutoTests = function () {
     });
   });
 
-  it('sets basestation auth info', function(done) {
-    nabto.startupAndOpenProfile('guest', 'blank', function(error) {
-      expect(error).not.toBeDefined();
-      nabto.setBaseStationAuthJson("")
-  });
+//  it('sets basestation auth info', function(done) {
+//    nabto.startupAndOpenProfile('guest', 'blank', function(error) {
+//      expect(error).not.toBeDefined();
+//      nabto.setBaseStationAuthJson("")
+//  });
 
   
   it('opens a tunnel to demo host with valid parameters and closes tunnel again', function(done) {
