@@ -26,6 +26,16 @@ var errors = {
   }
 };
 
+function assertOk(error, done, operation) {
+  if (error) {
+    var msg = operation + " failed with error: " + error;
+    done.fail(msg);
+    throw('Assertion failed: ' + msg);
+  };
+  expect(error).not.toBeDefined(); // mute jasmine complaints about no expectations
+}
+
+
 function xdescribe(title, func) {}
 
 exports.defineAutoTests = function () {
@@ -92,7 +102,7 @@ exports.defineAutoTests = function () {
       // code = 3120;
       // event_code = 1000020
       if (Math.floor(code / 1000) != 3) {
-	throw `unexpected base for nabto event: ${code/1000}`;
+	throw 'unexpected base for nabto event: ' + code/1000;
       }
       var base = (code - 3000);
       var major = Math.floor(base / 100) * 1000000;
@@ -143,6 +153,7 @@ exports.defineAutoTests = function () {
 
     it('starts up nabto', function(done) {
       nabto.startupAndOpenProfile(function(error) {
+        assertOk(error, done, "startupAndOpenProfile");
         expect(error).not.toBeDefined();
         done();
       });
@@ -150,39 +161,55 @@ exports.defineAutoTests = function () {
 
     it('can call startup multiple times', function(done) {
       // Wait a little for nabto startup to completely finish
-      setTimeout(function() {
-        nabto.startupAndOpenProfile(function(error) {
-          expect(error).not.toBeDefined();
+      nabto.shutdown(function(error) {
+        assertOk(error, done, "shutdown");
+        setTimeout(function() {
           nabto.startupAndOpenProfile(function(error) {
-            expect(error).not.toBeDefined();
-            done();
+            assertOk(error, done, "startupAndOpenProfile");
+            nabto.startupAndOpenProfile(function(error) {
+              assertOk(error, done, "startupAndOpenProfile (2)");
+              done();
+            });
           });
-        });
-      }, 200);
+        }, 200);
+      });
     });
-
+    
     it('shuts down nabto', function(done) {
       nabto.shutdown(function(error) {
-        expect(error).not.toBeDefined();
+        assertOk(error, done, "shutdown");
         done();
       });
     });
 
     it('can call shutdown multiple times', function(done) {
       nabto.shutdown(function(error) {
-        expect(error).not.toBeDefined();
+        assertOk(error, done, "shutdown");
         nabto.shutdown(function(error) {
-          expect(error).not.toBeDefined();
+          assertOk(error, done, "shutdown (2)");
           done();
         });
       });
     });
 
-    it('cannot invokeRpc with non-open nabto', function(done) {
-      nabto.prepareInvoke([testDevice],function(error) {
-        nabto.rpcInvoke(testUrl, function(error, result) {
-          expect(error.code).toBe(NabtoError.Code.API_NOT_INITIALIZED);
+    it('can invoke static resource dir config change', function(done) {
+      nabto.startup(function(error) {
+        assertOk(error, done, "startup");
+        nabto.setStaticResourceDir(cordova.file.dataDirectory, function(error) {
+          assertOk(error, done, "setStaticResourceDir");
           done();
+        });
+      });
+    });
+    
+    it('cannot invokeRpc with non-open nabto', function(done) {
+      nabto.shutdown(function(error) {
+        assertOk(error, done, "shutdown");
+        nabto.prepareInvoke([testDevice],function(error) {
+          nabto.rpcInvoke(testUrl, function(error, result) {
+            expect(error.code).toBe(NabtoError.Code.API_NOT_INITIALIZED);
+            done();
+          });
         });
       });
     });
@@ -215,7 +242,7 @@ exports.defineAutoTests = function () {
 
     it('starts up nabto with username/password', function(done) {
       nabto.startupAndOpenProfile('guest', 'blank', function(error) {
-        expect(error).not.toBeDefined();
+        assertOk(error, done, "startupAndOpenProfile");
         done();
       });
     });
@@ -223,29 +250,33 @@ exports.defineAutoTests = function () {
     it('sets a valid interface without error messages', function(done) {
       var interfaceXml = "<unabto_queries><query name='wind_speed.json' id='2'><request></request><response format='json'><parameter name='speed' type='uint32'/></response></query></unabto_queries>";
       nabto.rpcSetDefaultInterface(interfaceXml, function(error, result) {
-        expect(error).not.toBeDefined();
+        assertOk(error, done, "rpcSetDefaultInterface");
         done();
       });
     });
 
     it('invokes an rpc function', function(done) {
       var interfaceXml = "<unabto_queries><query name='wind_speed.json' id='2'><request></request><response format='json'><parameter name='speed_m_s' type='uint32'/></response></query></unabto_queries>";
-      nabto.rpcSetDefaultInterface(interfaceXml, function(error, result) {
-	expect(error).not.toBeDefined();
-        nabto.prepareInvoke(["demo.nabto.net"], function(error) {
-          expect(error).not.toBeDefined();
-          nabto.rpcInvoke("nabto://demo.nabto.net/wind_speed.json?", function(error, result) {
-            expect(error).not.toBeDefined();
-            expect(result.response).toBeDefined();
-            expect(result.response.speed_m_s).toBeDefined();
-            done();
-	  });
+      nabto.shutdown(function(error) { // clear session singleton to ensure working profile is used
+        nabto.startupAndOpenProfile(function() {
+          nabto.rpcSetDefaultInterface(interfaceXml, function(error, result) {
+            assertOk(error, done, "rpcSetDefaultInterface");
+            nabto.prepareInvoke(["demo.nabto.net"], function(error) {
+              assertOk(error, done, "prepareInvoke");
+              nabto.rpcInvoke("nabto://demo.nabto.net/wind_speed.json?", function(error, result) {
+                assertOk(error, done, "rpcInvoke");
+                expect(result.response).toBeDefined();
+                expect(result.response.speed_m_s).toBeDefined();
+                done();
+	      });
+            });
+          });
         });
       });
     });
     
     it('returns json error when invoking rpc without interface being set', function(done) {
-      nabto.shutdown(function() {
+      nabto.shutdown(function() { // clear session singleton to ensure working profile is used
         nabto.startupAndOpenProfile(function() {
           nabto.prepareInvoke(['demo.nabto.net'], function(error, result) {
             nabto.rpcInvoke('nabto://demo.nabto.net/test.json', function(error, result) {
@@ -261,14 +292,18 @@ exports.defineAutoTests = function () {
 
     it('returns an rpc error when invoking an offline device', function(done) {
       var interfaceXml = "<unabto_queries><query name='wind_speed.json' id='2'><request></request><response format='json'><parameter name='speed_m_s' type='uint32'/></response></query></unabto_queries>";
-      nabto.rpcSetDefaultInterface(interfaceXml, function(error, result) {
-	expect(error).not.toBeDefined();
-        nabto.prepareInvoke(["offline-error-216b3ea2.nabto.net"], function(error) {
-          nabto.rpcInvoke('nabto://offline-error-216b3ea2.nabto.net/wind_speed.json', function(error, result) {
-            expect(error).toBeDefined();
-            expect(error.code).toBe(NabtoError.Code.P2P_DEVICE_OFFLINE);
-            expect(result).not.toBeDefined();
-            done();
+      nabto.shutdown(function(error) { // clear session singleton to ensure working profile is used
+        nabto.startupAndOpenProfile(function() {
+          nabto.rpcSetDefaultInterface(interfaceXml, function(error, result) {
+            assertOk(error, done, "rpcSetDefaultInterface");
+            nabto.prepareInvoke(["offline-error-216b3ea2.nabto.net"], function(error) {
+              nabto.rpcInvoke('nabto://offline-error-216b3ea2.nabto.net/wind_speed.json', function(error, result) {
+                expect(error).toBeDefined();
+                expect(error.code).toBe(NabtoError.Code.P2P_DEVICE_OFFLINE);
+                expect(result).not.toBeDefined();
+                done();
+              });
+            });
           });
         });
       });
@@ -276,21 +311,25 @@ exports.defineAutoTests = function () {
 
     it('returns a device exception when rpc invoking an unexisting function on device', function(done) {
       var interfaceXml = "<unabto_queries><query name='wind_speed.json' id='87'><request></request><response format='json'><parameter name='speed_m_s' type='uint32'/></response></query></unabto_queries>";
-      nabto.rpcSetDefaultInterface(interfaceXml, function(error, result) {
-	expect(error).not.toBeDefined();
-        nabto.prepareInvoke(["demo.nabto.net"], function(error) {});
-        nabto.rpcInvoke('nabto://demo.nabto.net/wind_speed.json', function(error, result) {
-          expect(error).toBeDefined();
-          expect(error.code).toBe(NabtoError.Code.EXC_INV_QUERY_ID);
-          expect(result).not.toBeDefined();
-          done();
+      nabto.shutdown(function(error) { // clear session singleton to ensure working profile is used
+        nabto.startupAndOpenProfile(function() {
+          nabto.rpcSetDefaultInterface(interfaceXml, function(error, result) {
+            assertOk(error, done, "rpcSetDefaultInterface");
+            nabto.prepareInvoke(["demo.nabto.net"], function(error) {});
+            nabto.rpcInvoke('nabto://demo.nabto.net/wind_speed.json', function(error, result) {
+              expect(error).toBeDefined();
+              expect(error.code).toBe(NabtoError.Code.EXC_INV_QUERY_ID);
+              expect(result).not.toBeDefined();
+              done();
+            });
+          });
         });
       });
     });
     
     it('can get active session token', function(done) {
       nabto.getSessionToken(function(error, token) {
-        expect(error).not.toBeDefined();
+        assertOk(error, done, "getSessionToken");
         expect(typeof token).toBe('string');
         expect(token.length).toBe(44);
         done();
@@ -299,7 +338,7 @@ exports.defineAutoTests = function () {
 
     it('can get local nabto devices', function(done) {
       nabto.getLocalDevices(function(error, devices) {
-        expect(error).not.toBeDefined();
+        assertOk(error, done, "getLocalDevices");
         expect(Object.prototype.toString.call(devices)).toBe('[object Array]');
         if (devices.length > 0) {
           devices.map(function(device) {
@@ -307,7 +346,7 @@ exports.defineAutoTests = function () {
           });
         }
         else {
-          console.warn('There were no local nabto devices to test discover');
+          console.log('There were no local nabto devices to test discover');
         }
         done();
       });
@@ -315,7 +354,7 @@ exports.defineAutoTests = function () {
 
     it('can return nabto client version', function(done) {
       nabto.version(function(error, version) {
-        expect(error).not.toBeDefined();
+        assertOk(error, done, "version");
         expect(version[0]).toBe('4');
         expect(version[1]).toBe('.');
         expect(version[2]).toBeDefined();
@@ -326,7 +365,7 @@ exports.defineAutoTests = function () {
 
     it('can return nabto client version string', function(done) {
       nabto.versionString(function(error, version) {
-        expect(error).not.toBeDefined();
+        assertOk(error, done, "versionString");
         expect(version[0]).toBe('4');
         expect(version[1]).toBe('.');
         expect(version[2]).toBeDefined();
@@ -338,14 +377,14 @@ exports.defineAutoTests = function () {
 
     it('shuts down nabto', function(done) {
       nabto.shutdown(function(error) {
-        expect(error).not.toBeDefined();
+        assertOk(error, done, "shutdown");
         done();
       });
     });
 
     it('rpcInvoke fails when not calling prepareInvoke', function(done){
       nabto.startupAndOpenProfile('guest', 'blank', function(error) {
-        expect(error).not.toBeDefined();
+        assertOk(error, done, "startupAndOpenProfile");
         nabto.rpcInvoke("nabto://demo.nabto.net/wind_speed.json?", function(error, result) {
           expect(error).toBeDefined();
           expect(error.code).toBe(NabtoError.Code.P2P_MISSING_PREPARE);
@@ -379,14 +418,15 @@ exports.defineAutoTests = function () {
     nabto.startup(function(error) {
       // exercise setOption (set bad value, re-construct defaults)
       nabto.setOption("urlPortalDomain", "com", function(error) {
-        expect(error).not.toBeDefined();
+        assertOk(error, done, "setOption");
         nabto.setOption("urlPortalHostName", "www.google", function(error) {
-          expect(error).not.toBeDefined();
+          assertOk(error, done, "setOption");
           nabto.createSignedKeyPair("stresstest@nabto.com", "12345678", function(error) {
             expect(error).toBeDefined(); // expect fail: google.com cannot issue cert
             nabto.setOption("urlPortalHostName", "webservice.nabto", function(error) {
               expect(error).not.toBeDefined();
               nabto.createSignedKeyPair("stresstest@nabto.com", "12345678", function(error) {
+                assertOk(error, done, "createSignedKeyPair");
                 expect(error).not.toBeDefined(); // expect ok after setting back to default
                 done();
               });
@@ -398,20 +438,26 @@ exports.defineAutoTests = function () {
   });
 
   it('creates a self-signed certificate and can remove it again', function(done) {
-    let id = 'user_' + new Date().getMilliseconds();
-    let password = 'secret';
+    var id = 'user_' + new Date().getMilliseconds();
+    var password = 'secret';
     nabto.startupAndOpenProfile(id, password, function(error) {
       expect(error).toBeDefined();
       expect(error.code).toBe(NabtoError.Code.API_OPEN_CERT_OR_PK_FAILED);
       nabto.createKeyPair(id, password, function(error) {
-        expect(error).not.toBeDefined();
+        assertOk(error, done, "createKeyPair");
         nabto.startupAndOpenProfile(id, password, function(error) {
-          expect(error).not.toBeDefined();
-          nabto.removeKeyPair(id, function(error) {
-            nabto.startupAndOpenProfile(id, password, function(error) {
-              expect(error).toBeDefined();
-              expect(error.code).toBe(NabtoError.Code.API_OPEN_CERT_OR_PK_FAILED);
-              done();
+          assertOk(error, done, "startupAndOpenProfile");
+          nabto.shutdown(function(error) { // remove singleton session
+            assertOk(error, done, "shutdown");
+            nabto.startup(function(error) {
+              nabto.removeKeyPair(id, function(error) {
+                assertOk(error, done, "removeKeyPair");
+                nabto.startupAndOpenProfile(id, password, function(error) {
+                  expect(error).toBeDefined();
+                  expect(error.code).toBe(NabtoError.Code.API_OPEN_CERT_OR_PK_FAILED);
+                  done();
+                });
+              });
             });
           });
         });
@@ -419,65 +465,76 @@ exports.defineAutoTests = function () {
     });
   });
   
-  it('handles certs with plus signs in the name (trigger NABTO-1xxx)', function(done) {
-    let id = 'foo+bar@baz-' + + new Date().getMilliseconds() + '.org' ;
-    let password = 'secret';
+  it('handles certs with plus signs in the name', function(done) {
+    var id = 'foo+bar@baz-' + new Date().getMilliseconds() + '.org' ;
+    var password = 'secret';
     nabto.createKeyPair(id, password, function(error) {
+      assertOk(error, done, "createKeyPair");
       nabto.startupAndOpenProfile(id, password, function(error) {
-        expect(error).not.toBeDefined();
+        assertOk(error, done, "startupAndOpenProfile");
         nabto.removeKeyPair(id, function(error) {
-          expect(error).not.toBeDefined();
+          assertOk(error, done, "removeKeyPair");
           done();
         });
       });
     });
   });
 
-//  it('sets basestation auth info', function(done) {
-//    nabto.startupAndOpenProfile('guest', 'blank', function(error) {
-//      expect(error).not.toBeDefined();
-//      nabto.setBaseStationAuthJson("")
-//  });
-
+  it('sets basestation auth info', function(done) {
+    nabto.startupAndOpenProfile('guest', 'blank', function(error) {
+      assertOk(error, done, "startupAndOpenProfile");
+      nabto.setBaseStationAuthJson("{ \"foo\": \"bar\" }", function(error) {
+        assertOk(error, done, "setBaseStationAuthJson");
+        nabto.setBaseStationAuthJson("", function(error) {
+          assertOk(error, done, "setBaseStationAuthJson (2)");
+          done();
+        });
+      });
+    });
+  });
   
   it('opens a tunnel to demo host with valid parameters and closes tunnel again', function(done) {
-    nabto.startupAndOpenProfile('guest', 'blank', function(error) {
-      expect(error).not.toBeDefined();
-      nabto.tunnelOpenTcp("streamdemo.nabto.net", 80, function(error, tunnel) {
-        expect(error).not.toBeDefined();
-        expect(tunnel).toBeDefined();
-        nabto.tunnelPort(tunnel, function(status, port) {
-          expect(status).not.toBeDefined();
-          expect(port).toBeGreaterThan(1000);
-
-          var xhttp = new XMLHttpRequest();
-          xhttp.onreadystatechange = function() {
-            if (xhttp.readyState !== 4) { return; }
-            expect(xhttp.status).toBe(200);
-            expect(xhttp.responseText).toContain('Serve a large file');
-            xhttp.abort();
-
-            nabto.tunnelClose(tunnel, function(error) {
-              expect(error).not.toBeDefined();
-
-              // verify that we can no longer connect to tunnel (it takes a little while to close
-              // it completely)
-              setTimeout(() => {
-                var xhttp2 = new XMLHttpRequest();
-                xhttp2.onreadystatechange = function() {
-                  if (xhttp2.readyState !== 4) { return; }
-                  expect(xhttp2.status).toBe(0);
-                  expect(xhttp2.responseText).toBe('');
-                  done();
-                };
-                xhttp2.open('GET', 'http://127.0.0.1:' + port + '/?cache-blah-foo=' + new Date(), true);
-                xhttp2.send();
-              }, 250);
-            });
-            
-          };
-          xhttp.open('GET', 'http://127.0.0.1:' + port + '/?cache-blah-bar=' + new Date(), true);
-          xhttp.send();
+    nabto.shutdown(function(error) { // clear session singleton to ensure working profile is used
+      assertOk(error, done, "shutdown");
+      nabto.startupAndOpenProfile('guest', 'blank', function(error) {
+        assertOk(error, done, "startupAndOpenProfile");
+        nabto.tunnelOpenTcp("streamdemo.nabto.net", 80, function(error, tunnel) {
+          assertOk(error, done, "tunnelOpenTcp");
+          expect(tunnel).toBeDefined();
+          nabto.tunnelPort(tunnel, function(error, ephPort) {
+            assertOk(error, done, "tunnelPort");
+            expect(ephPort).toBeDefined();
+            expect(ephPort).toBeGreaterThan(1000);
+            var url1 = 'http://127.0.0.1:' + ephPort + '/?cache-blah-foo=' + new Date().getMilliseconds();
+            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function() {
+              if (xhttp.readyState !== 4) { return; }
+              expect(xhttp.status).toBe(200);
+              expect(xhttp.responseText).toContain('Serve a large file');
+              xhttp.abort();
+              
+              nabto.tunnelClose(tunnel, function(error) {
+                assertOk(error, done, "tunnelClose");
+                
+                // verify that we can no longer connect to tunnel (it takes a little while to close
+                // it completely)
+                setTimeout(function() {
+                  var xhttp2 = new XMLHttpRequest();
+                  xhttp2.onreadystatechange = function() {
+                    if (xhttp2.readyState !== 4) { return; }
+                    expect(xhttp2.status).toBe(0);
+                    expect(xhttp2.responseText).toBe('');
+                    done();
+                  };
+                  var url2 = 'http://127.0.0.1:' + ephPort + '/?cache-blah-foo=' + new Date().getMilliseconds();
+                  xhttp2.open('GET', url2, true);
+                  xhttp2.send();
+                }, 250);
+              });
+            };
+            xhttp.open('GET', url1, true);
+            xhttp.send();
+          });
         });
       });
     });
@@ -497,7 +554,7 @@ exports.defineAutoTests = function () {
 
   it('handles offline tunnel host and retrieves correct error code ', function(done) {
     nabto.startupAndOpenProfile('guest', 'blank', function(error) {
-      expect(error).not.toBeDefined();
+      assertOk(error, done, "startupAndOpenProfile");
       nabto.tunnelOpenTcp(new Date().getMilliseconds() + "veryoffline.nabto.net", 80, function(error, tunnel) {
         assertErrorIsInvalidTunnel(error);
         done();
@@ -507,7 +564,7 @@ exports.defineAutoTests = function () {
 
   it('handles empty tunnel host input', function(done) {
     nabto.startupAndOpenProfile('guest', 'blank', function(error) {
-      expect(error).not.toBeDefined();
+      assertOk(error, done, "startupAndOpenProfile");
       nabto.tunnelOpenTcp("", 80, function(error, tunnel) {
         assertErrorIsInvalidInput(error);
         done();
@@ -517,7 +574,7 @@ exports.defineAutoTests = function () {
     
   it('handles bad tunnel port input 1', function(done) {
     nabto.startupAndOpenProfile('guest', 'blank', function(error) {
-      expect(error).not.toBeDefined();
+      assertOk(error, done, "startupAndOpenProfile");
       nabto.tunnelOpenTcp("streamdemo.nabto.net", -80, function(error, tunnel) {
         assertErrorIsInvalidInput(error);
         done();
@@ -527,7 +584,7 @@ exports.defineAutoTests = function () {
 
   it('handles bad tunnel port input 2', function(done) {
     nabto.startupAndOpenProfile('guest', 'blank', function(error) {
-      expect(error).not.toBeDefined();
+      assertOk(error, done, "startupAndOpenProfile");
       nabto.tunnelOpenTcp("streamdemo.nabto.net", "bad", function(error, tunnel) {
         assertErrorIsInvalidInput(error);
         done();
@@ -658,7 +715,7 @@ exports.defineManualTests = function(contentEl, createActionButton) {
   createActionButton('RpcInvoke', function() {
     nabto.startup();
     nabto.rpcInvoke("nabto://demo.nabto.net/wind_speed.json?", function(error, result) {
-      console.log(`error=${error}, result=${result}`);
+      console.log('error=' + error + ' +, result=' + result);
     });
     nabto.shutdown();
     console.log("expected result: ad should not be shown");

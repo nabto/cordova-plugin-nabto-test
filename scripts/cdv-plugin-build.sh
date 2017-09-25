@@ -32,6 +32,7 @@ function createProject() {
         cordova create $DIR com.example.$id $PROJ
         cordova plugin add https://github.com/maverickmishra/cordova-plugin-test-framework.git
         cordova plugin add cordova-plugin-device
+        cordova plugin add cordova-plugin-file
         local f=`mktemp`
         cat $DIR/config.xml | sed 's/index.html/cdvtests\/index.html/' > $f
         cp $f $DIR/config.xml
@@ -71,16 +72,19 @@ function uninstallPlugins() {
 }
 
 function installPlugins() {
-    if [ "$platform" == "ios" ]; then
+    if [ "$PLATFORM" == "ios" ]; then
         if [ -d $OPTIONAL_IOS_CLIENT_PATH ]; then
             echo "Patching iOS plugin with source from $OPTIONAL_IOS_CLIENT_PATH"
             cp $OPTIONAL_IOS_CLIENT_PATH/NabtoClient.{h,mm} $PLUGIN_PATH/src/ios
         fi
     fi
 
-    if [ "$platform" == "android" ]; then
+    if [ "$PLATFORM" == "android" ]; then
         if [ -d $OPTIONAL_ANDROID_CLIENT_PATH ]; then
             echo "Patching Android plugin with source from $OPTIONAL_ANDROID_CLIENT_PATH"
+            echo "********************************************************************************"
+            echo "Remember to disable .aar install in plugin.xml!"
+            echo "********************************************************************************"
             pushd . > /dev/null
             cd $PLUGIN_PATH/src/android
             rm -rf api
