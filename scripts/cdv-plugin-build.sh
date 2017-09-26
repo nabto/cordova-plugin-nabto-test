@@ -3,7 +3,7 @@
 set -e
 
 PLATFORM=$1
-CLEAN=$2
+CLEAN_OR_NPM=$2
 
 PROJ=cordova-test
 DIR=~/projects/$PROJ
@@ -19,7 +19,7 @@ if [ -z "$PLATFORM" ]; then
    exit 1
 fi
 
-if [ ! -z "$CLEAN" ]; then
+if [ ! -z "$CLEAN_OR_NPM" ]; then
     rm -rf $DIR
 fi
 
@@ -56,7 +56,7 @@ function isPlatformInstalled() {
 }
 
 function uninstallPlugins() {
-    echo "Uninstalling plugins"
+    echo "Uninstalling Nabto plugins"
     set +e
     time {
         rm -rf  ~/.npm/cordova-plugin-nabto*
@@ -71,7 +71,7 @@ function uninstallPlugins() {
     set -e
 }
 
-function installPlugins() {
+function installDevPlugins() {    
     if [ "$PLATFORM" == "ios" ]; then
         if [ -d $OPTIONAL_IOS_CLIENT_PATH ]; then
             echo "Patching iOS plugin with source from $OPTIONAL_IOS_CLIENT_PATH"
@@ -99,8 +99,21 @@ function installPlugins() {
         cordova plugin add $PLUGIN_TEST_PATH
     }
     
-    if [ "$platform" == "ios" ]; then
+    if [ "$PLATFORM" == "ios" ]; then
         echo 'OTHER_LDFLAGS = -force_load $(BUILT_PRODUCTS_DIR)/libCordova.a -lstdc++' >> platforms/ios/cordova/build.xcconfig
+    fi
+}
+
+function installNpmPlugins() {
+    cordova plugin add cordova-plugin-nabto
+    cordova plugin add https://github.com/nabto/cordova-plugin-nabto-test.git
+}
+
+function installPlugins() {
+    if [ "$CLEAN_OR_NPM" != "npm" ]; then
+        installDevPlugins
+    else
+        installNpmPlugins
     fi
 }
 
