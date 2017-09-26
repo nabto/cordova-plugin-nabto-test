@@ -27,7 +27,7 @@ function createProject() {
     local id=`echo $PROJ | sed 's/[-_]//'`
     time {
         rm -rf $DIR
-        mkdir $DIR
+        mkdir -p $DIR
         cd $DIR
         cordova create $DIR com.example.$id $PROJ
         cordova plugin add https://github.com/maverickmishra/cordova-plugin-test-framework.git
