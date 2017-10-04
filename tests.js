@@ -413,7 +413,7 @@ exports.defineAutoTests = function () {
   });
 
 //  describe('Debug', function () {
-  
+
   it('creates signed certificate', function(done){
     nabto.startup(function(error) {
       // exercise setOption (set bad value, re-construct defaults)
@@ -433,6 +433,56 @@ exports.defineAutoTests = function () {
             });
           });
         });
+      });
+    });
+  });
+
+  it('invokes signup', function(done) {
+    // just verify plumbing is ok (that function can be invoked)
+    nabto.startup(function(error) {
+      assertOk(error, done, "startup");
+      nabto.signup("stresstest@nabto.com", "12345678", function(error) {
+        expect(error).toBeDefined(); // expect fail: account exists
+        expect(error.code).toBe(NabtoError.Code.API_ADDRESS_IN_USE);
+        done();
+      });
+    });
+  });
+
+  it('invokes signup with bad args', function(done) {
+    nabto.startup(function(error) {
+      assertOk(error, done, "startup");
+      nabto.signup("stresstest@nabto.com", function(error) {
+        expect(error).toBeDefined(); 
+        expect(error.code).toBe(NabtoError.Code.CDV_INVALID_ARG);
+        nabto.signup(function(error) {
+          expect(error).toBeDefined(); 
+          expect(error.code).toBe(NabtoError.Code.CDV_INVALID_ARG);
+          done();
+        });
+      });
+    });
+  });
+
+  it('invokes password reset', function(done){
+    // just verify plumbing is ok (that function can be invoked)
+    nabto.startup(function(error) {
+      assertOk(error, done, "startup");
+      var id = 'unexisting_user_' + new Date().getMilliseconds() + '@foo.org';
+      nabto.resetAccountPassword(id, function(error) {
+        expect(error).not.toBeDefined(); 
+        done();
+      });
+    });
+  });
+
+  it('invokes password reset with bad args', function(done){
+    nabto.startup(function(error) {
+      assertOk(error, done, "startup");
+      nabto.resetAccountPassword(function(error) {
+        expect(error).toBeDefined(); 
+        expect(error.code).toBe(NabtoError.Code.CDV_INVALID_ARG);
+        done();
       });
     });
   });
@@ -483,16 +533,16 @@ exports.defineAutoTests = function () {
   it('sets basestation auth info', function(done) {
     nabto.startupAndOpenProfile('guest', 'blank', function(error) {
       assertOk(error, done, "startupAndOpenProfile");
-      nabto.setBaseStationAuthJson("{ \"foo\": \"bar\" }", function(error) {
-        assertOk(error, done, "setBaseStationAuthJson");
-        nabto.setBaseStationAuthJson("", function(error) {
-          assertOk(error, done, "setBaseStationAuthJson (2)");
+      nabto.setBasestationAuthJson("{ \"foo\": \"bar\" }", function(error) {
+        assertOk(error, done, "setBasestationAuthJson");
+        nabto.setBasestationAuthJson("", function(error) {
+          assertOk(error, done, "setBasestationAuthJson (2)");
           done();
         });
       });
     });
   });
-  
+   
   it('opens a tunnel to demo host with valid parameters and closes tunnel again', function(done) {
     nabto.shutdown(function(error) { // clear session singleton to ensure working profile is used
       assertOk(error, done, "shutdown");
