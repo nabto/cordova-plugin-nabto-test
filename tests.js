@@ -530,6 +530,21 @@ exports.defineAutoTests = function () {
     });
   });
 
+  it('handles certs with utf8 encoded unicode chars the name', function(done) {
+    var id = 'rådgrødmædfløde' ;
+    var password = 'secret';
+    nabto.createKeyPair(id, password, function(error) {
+      assertOk(error, done, "createKeyPair");
+      nabto.startupAndOpenProfile(id, password, function(error) {
+        assertOk(error, done, "startupAndOpenProfile");
+        nabto.removeKeyPair(id, function(error) {
+          assertOk(error, done, "removeKeyPair");
+          done();
+        });
+      });
+    });
+  });
+
   it('sets basestation auth info', function(done) {
     nabto.startupAndOpenProfile('guest', 'blank', function(error) {
       assertOk(error, done, "startupAndOpenProfile");

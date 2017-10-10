@@ -3,7 +3,7 @@
 set -e
 
 PLATFORM=$1
-CLEAN_OR_NPM=$2
+TARGET=$2
 
 PROJ=cordova-test
 DIR=~/projects/$PROJ
@@ -15,11 +15,11 @@ OPTIONAL_IOS_CLIENT_PATH=~/svn/trunk/nabto/src/app/client/ios2.0/NabtoClient/Nab
 OPTIONAL_ANDROID_CLIENT_PATH=~/git/android-client-api/src/main/java/com/nabto/api
 
 if [ -z "$PLATFORM" ]; then
-   echo "Usage: $0 <platform> [clean]"
+   echo "Usage: $0 <platform> [clean|npm|<tar ball from jenkins>]"
    exit 1
 fi
 
-if [ ! -z "$CLEAN_OR_NPM" ]; then
+if [ ! -z "$TARGET" ]; then
     rm -rf $DIR
 fi
 
@@ -109,12 +109,32 @@ function installNpmPlugins() {
     cordova plugin add https://github.com/nabto/cordova-plugin-nabto-test.git
 }
 
-function installPlugins() {
-    if [ "$CLEAN_OR_NPM" != "npm" ]; then
-        installDevPlugins
-    else
-        installNpmPlugins
+function installTarballPlugins() {
+    # cordova expects github tarball format, not the one output by Nabto jenkins, so unpack and install from dir
+    local tmpdir=`mktemp -d`
+    pushd . > /dev/null
+    cd $tmpdir
+    tar xfz $TARGET
+    if [ ! -d $tmpdir/package ]; then
+        echo "ERROR: Unexpected package structure"
+        rm -rf $tmpdir
+        exit 1
     fi
+    popd > /dev/null
+    cordova plugin add $tmpdir/package
+    cordova plugin add https://github.com/nabto/cordova-plugin-nabto-test.git
+    rm -rf $tmpdir
+}
+
+function installPlugins() {
+    if [ "$TARGET" == "npm" ]; then
+        installNpmPlugins
+    elif [ -f "$TARGET" ]; then
+        installTarballPlugins
+    else
+        installDevPlugins
+    fi
+                
 }
 
 function buildAndRun() {
