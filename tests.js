@@ -557,7 +557,24 @@ exports.defineAutoTests = function () {
       });
     });
   });
-   
+
+  //// !!!! FIX USAGE OF LOCAL TEST DEVICE !!!! ////
+  it('can open stream', function(done) {
+    nabto.startupAndOpenProfile('guest', 'blank', function(error) {
+      assertOk(error, done, "startupAndOpenProfile");
+      nabto.streamOpen("lala.push-test-tk.cloud.dev.nabto.net", function(error, stream) {
+        assertOk(error, done, "streamOpen");
+        nabto.streamConnectionType(stream, function(error, streamType) {
+          assertOk(error, done, "streamConnectionType");
+          nabto.streamClose(stream, function(error) {
+            assertOk(error, done, "streamClose");
+            done();
+          });
+        });
+      });
+    });
+  });
+
   it('opens a tunnel to demo host with valid parameters and closes tunnel again', function(done) {
     nabto.shutdown(function(error) { // clear session singleton to ensure working profile is used
       assertOk(error, done, "shutdown");

@@ -1,4 +1,6 @@
 #!/bin/bash
+PLUGIN_TEST_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
+echo $PLUGIN_TEST_PATH
 
 set -e
 
@@ -6,13 +8,17 @@ PLATFORM=$1
 TARGET=$2
 
 PROJ=cordova-test
-DIR=~/projects/$PROJ
-PLUGIN_PATH=~/git/cordova-plugin-nabto
-PLUGIN_TEST_PATH=~/git/cordova-plugin-nabto-tests
+DIR=~/Documents/$PROJ
+PLUGIN_PATH=~/sandbox/cordova-plugin-nabto
+
+if [[ -z "${PLUGIN_PATH}" ]]; then
+    echo "PLUGIN_PATH unset"
+    exit 1;
+fi;
 
 # patch plugin with source from these locations if they exist
-OPTIONAL_IOS_CLIENT_PATH=~/svn/trunk/nabto/src/app/client/ios2.0/NabtoClient/NabtoClient
-OPTIONAL_ANDROID_CLIENT_PATH=~/git/android-client-api/src/main/java/com/nabto/api
+OPTIONAL_IOS_CLIENT_PATH=~/sandbox/nabto/src/app/client/ios2.0/NabtoClient/NabtoClient
+OPTIONAL_ANDROID_CLIENT_PATH=~/sandbox/android-client-api/src/main/java/com/nabto/api
 
 if [ -z "$PLATFORM" ]; then
    echo "Usage: $0 <platform> [clean|npm|<tar ball from jenkins>]"
@@ -146,27 +152,33 @@ function buildAndRun() {
     
     if [[ "$(isPlatformInstalled $PLATFORM)" != "1" ]]; then
         echo "$PLATFORM missing, adding"
-        time {
-            cordova platform add $PLATFORM@latest
-        }
         if [ "$PLATFORM" == "ios" ]; then
+            time {
+                cordova platform add $PLATFORM@latest
+            }
             # work around replace bug
             PWD=`pwd`
             cd $PWD/platforms/ios/cordova
             npm install ios-sim@latest
             cd $PWD
+        else
+            time {
+                # Work around for Apache failing to maintain cordova-plugin-test-framework
+                # Going to android 6.4.0 currently fails
+                cordova platform add $PLATFORM@6.3.0
+            }
         fi
     fi
     
     uninstallPlugins
     installPlugins
     
-    cordova build --emulator $PLATFORM
+    cordova build $PLATFORM
     
     if [ "$PLATFORM" == "ios" ]; then
         cordova run ios --target iPad-Air-2
     else
-        cordova emulate $PLATFORM
+        cordova run $PLATFORM
     fi
 }
 
