@@ -558,22 +558,40 @@ exports.defineAutoTests = function () {
     });
   });
 
-  //// !!!! FIX USAGE OF LOCAL TEST DEVICE !!!! ////
   it('can open stream', function(done) {
-    nabto.startupAndOpenProfile('guest', 'blank', function(error) {
-      assertOk(error, done, "startupAndOpenProfile");
-      nabto.streamOpen("lala.push-test-tk.cloud.dev.nabto.net", function(error, stream) {
-        assertOk(error, done, "streamOpen");
-        nabto.streamConnectionType(stream, function(error, streamType) {
-          assertOk(error, done, "streamConnectionType");
-          nabto.streamClose(stream, function(error) {
-            assertOk(error, done, "streamClose");
-            done();
+    nabto.shutdown(function(error) { // clear session singleton to ensure working profile is used
+      assertOk(error, done, "shutdown");
+      nabto.startupAndOpenProfile('guest', 'blank', function(error) {
+        assertOk(error, done, "startupAndOpenProfile");
+        nabto.streamOpen("streamdemo.nabto.net", function(error, stream) {
+          assertOk(error, done, "streamOpen");
+          nabto.streamConnectionType(stream, function(error, streamType) {
+            assertOk(error, done, "streamConnectionType");
+            document.addEventListener("NabtoStreamEvent", streamEventHandler, false);
+            nabto.streamWrite(stream, "echo\n", function(error) {
+              assertOk(error, done, "streamWrite");
+              nabto.streamStartReading(stream, function(error,status) {
+                assertOk(error, done, "streamStartReading");
+                nabto.streamWrite(stream, "hello World\n", function(error) {
+                  assertOk(error, done, "streamWrite");
+                  console.log("Stream open test done");
+                  nabto.streamClose(stream, function(error) {
+                    assertOk(error, done, "streamClose");
+                    done();
+                  });
+                });
+              });
+            });
           });
         });
       });
     });
   });
+
+  function streamEventHandler(event) {
+    console.log("Invoked streamEventHandler with: " + event);
+    console.log(event.detail.data);
+  }
 
   it('opens a tunnel to demo host with valid parameters and closes tunnel again', function(done) {
     nabto.shutdown(function(error) { // clear session singleton to ensure working profile is used
@@ -587,12 +605,11 @@ exports.defineAutoTests = function () {
             assertOk(error, done, "tunnelPort");
             expect(ephPort).toBeDefined();
             expect(ephPort).toBeGreaterThan(1000);
-            var url1 = 'http://127.0.0.1:' + ephPort + '/?cache-blah-foo=' + new Date().getMilliseconds();
+            var url1 = 'http://127.0.0.1:' + ephPort + '/get/10KB';
             var xhttp = new XMLHttpRequest();
             xhttp.onreadystatechange = function() {
               if (xhttp.readyState !== 4) { return; }
               expect(xhttp.status).toBe(200);
-              expect(xhttp.responseText).toContain('Serve a large file');
               xhttp.abort();
               
               nabto.tunnelClose(tunnel, function(error) {
@@ -608,7 +625,7 @@ exports.defineAutoTests = function () {
                     expect(xhttp2.responseText).toBe('');
                     done();
                   };
-                  var url2 = 'http://127.0.0.1:' + ephPort + '/?cache-blah-foo=' + new Date().getMilliseconds();
+                  var url2 = 'http://127.0.0.1:' + ephPort + '/get/10KB';
                   xhttp2.open('GET', url2, true);
                   xhttp2.send();
                 }, 250);
