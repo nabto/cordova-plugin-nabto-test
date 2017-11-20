@@ -567,31 +567,42 @@ exports.defineAutoTests = function () {
           assertOk(error, done, "streamOpen");
           nabto.streamConnectionType(stream, function(error, streamType) {
             assertOk(error, done, "streamConnectionType");
-            document.addEventListener("NabtoStreamEvent", streamEventHandler, false);
             nabto.streamWrite(stream, "echo\n", function(error) {
               assertOk(error, done, "streamWrite");
               nabto.streamStartReading(stream, function(error,status) {
                 assertOk(error, done, "streamStartReading");
-                nabto.streamWrite(stream, "hello World\n", function(error) {
-                  assertOk(error, done, "streamWrite");
-                  console.log("Stream open test done");
-                  nabto.streamClose(stream, function(error) {
-                    assertOk(error, done, "streamClose");
-                    done();
+                document.addEventListener("NabtoStreamEvent", function(event){
+                  expect(event.detail.data.length).toBeDefined();
+                  var string = "";
+                  for (var i = 0; i < event.detail.data.length; i++) {
+                    string += String.fromCharCode(event.detail.data[i])
+                  }
+                  expect(string).toBe('+\n');
+                  document.removeEventListener("NabtoStreamEvent",arguments.callee);
+                  nabto.streamWrite(stream, "Hello World\n", function(error) {
+                    assertOk(error, done, "streamWrite");
+                    document.addEventListener("NabtoStreamEvent", function(event){
+                      expect(event.detail.data.length).toBeDefined();
+                      var string = "";
+                      for (var i = 0; i < event.detail.data.length; i++) {
+                        string += String.fromCharCode(event.detail.data[i])
+                      }
+                      expect(string).toBe('Hello World\n');
+                      nabto.streamClose(stream, function(error) {
+                        assertOk(error, done, "streamClose");
+                        done();
+                      });
+                    }, false);
                   });
-                });
+                }, false);
               });
+
             });
           });
         });
       });
     });
   });
-
-  function streamEventHandler(event) {
-    console.log("Invoked streamEventHandler with: " + event);
-    console.log(event.detail.data);
-  }
 
   it('opens a tunnel to demo host with valid parameters and closes tunnel again', function(done) {
     nabto.shutdown(function(error) { // clear session singleton to ensure working profile is used
