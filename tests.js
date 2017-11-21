@@ -569,34 +569,29 @@ exports.defineAutoTests = function () {
             assertOk(error, done, "streamConnectionType");
             nabto.streamWrite(stream, "echo\n", function(error) {
               assertOk(error, done, "streamWrite");
-              nabto.streamStartReading(stream, function(error,status) {
+              nabto.streamRead(stream, function(error,data) {
                 assertOk(error, done, "streamStartReading");
-                document.addEventListener("NabtoStreamEvent", function(event){
-                  expect(event.detail.data.length).toBeDefined();
-                  var string = "";
-                  for (var i = 0; i < event.detail.data.length; i++) {
-                    string += String.fromCharCode(event.detail.data[i])
-                  }
-                  expect(string).toBe('+\n');
-                  document.removeEventListener("NabtoStreamEvent",arguments.callee);
-                  nabto.streamWrite(stream, "Hello World\n", function(error) {
-                    assertOk(error, done, "streamWrite");
-                    document.addEventListener("NabtoStreamEvent", function(event){
-                      expect(event.detail.data.length).toBeDefined();
-                      var string = "";
-                      for (var i = 0; i < event.detail.data.length; i++) {
-                        string += String.fromCharCode(event.detail.data[i])
-                      }
-                      expect(string).toBe('Hello World\n');
-                      nabto.streamClose(stream, function(error) {
-                        assertOk(error, done, "streamClose");
-                        done();
-                      });
-                    }, false);
+                var string = "";
+                for (var i = 0; i < data.length; i++) {
+                  string += String.fromCharCode(data[i])
+                }
+                expect(string).toBe('+\n');
+                nabto.streamWrite(stream, "Hello World\n", function(error) {
+                  assertOk(error, done, "streamWrite");
+                  nabto.streamRead(stream, function(error,data){
+                    assertOk(error, done, "streamRead");
+                    var string = "";
+                    for (var i = 0; i < data.length; i++) {
+                      string += String.fromCharCode(data[i])
+                    }
+                    expect(string).toBe('Hello World\n');
+                    nabto.streamClose(stream, function(error) {
+                      assertOk(error, done, "streamClose");
+                      done();
+                    });
                   });
-                }, false);
+                });
               });
-
             });
           });
         });
