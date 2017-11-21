@@ -599,6 +599,39 @@ exports.defineAutoTests = function () {
     });
   });
 
+  it('handles offline stream host and retrieves correct error code ', function(done) {
+    nabto.startupAndOpenProfile('guest', 'blank', function(error) {
+      assertOk(error, done, "startupAndOpenProfile");
+      nabto.streamOpen(new Date().getMilliseconds() + "veryoffline.nabto.net", function(error, stream) {
+        expect(error).toBeDefined();
+        expect(error.category).toBe(NabtoError.Category.API);
+        expect(error.code).toBe(NabtoError.Code.API_CONNECT_TO_HOST_FAILED);
+        done();
+      });
+    });
+  });
+
+  it('handles empty stream host input', function(done) {
+    nabto.startupAndOpenProfile('guest', 'blank', function(error) {
+      assertOk(error, done, "startupAndOpenProfile");
+      nabto.streamOpen("", function(error, tunnel) {
+        expect(error).toBeDefined();
+        expect(error.category).toBe(NabtoError.Category.WRAPPER);
+        expect(error.code).toBe(NabtoError.Code.CDV_INVALID_ARG);
+        done();
+      });
+    });
+  });
+
+  it('handles get connection type on an invalid stream', function(done) {
+    nabto.startupAndOpenProfile('guest', 'blank', function(error) {
+      nabto.streamConnectionType("foo", function(error) {
+        expect(error).toBeDefined();
+        done();
+      });
+    });
+  });
+  
   it('opens a tunnel to demo host with valid parameters and closes tunnel again', function(done) {
     nabto.shutdown(function(error) { // clear session singleton to ensure working profile is used
       assertOk(error, done, "shutdown");
