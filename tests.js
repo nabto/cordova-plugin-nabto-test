@@ -569,7 +569,7 @@ exports.defineAutoTests = function () {
             assertOk(error, done, "streamConnectionType");
             nabto.streamWrite(stream, "echo\n", function(error) {
               assertOk(error, done, "streamWrite");
-              nabto.streamRead(stream, function(error,data) {
+              nabto.streamRead(stream, 100, function(error,data) {
                 assertOk(error, done, "streamStartReading");
                 var string = "";
                 for (var i = 0; i < data.length; i++) {
@@ -578,7 +578,7 @@ exports.defineAutoTests = function () {
                 expect(string).toBe('+\n');
                 nabto.streamWrite(stream, "Hello World\n", function(error) {
                   assertOk(error, done, "streamWrite");
-                  nabto.streamRead(stream, function(error,data){
+                  nabto.streamRead(stream, 100, function(error,data){
                     assertOk(error, done, "streamRead");
                     var string = "";
                     for (var i = 0; i < data.length; i++) {
@@ -644,7 +644,7 @@ exports.defineAutoTests = function () {
             assertOk(error, done, "tunnelPort");
             expect(ephPort).toBeDefined();
             expect(ephPort).toBeGreaterThan(1000);
-            var url1 = 'http://127.0.0.1:' + ephPort + '/get/10KB';
+            var url1 = 'http://127.0.0.1:' + ephPort + '/?cache-blah-foo=' + new Date().getMilliseconds();
             var xhttp = new XMLHttpRequest();
             xhttp.onreadystatechange = function() {
               if (xhttp.readyState !== 4) { return; }
@@ -664,7 +664,7 @@ exports.defineAutoTests = function () {
                     expect(xhttp2.responseText).toBe('');
                     done();
                   };
-                  var url2 = 'http://127.0.0.1:' + ephPort + '/get/10KB';
+                  var url2 = 'http://127.0.0.1:' + ephPort + '/?cache-blah-foo=' + new Date().getMilliseconds();
                   xhttp2.open('GET', url2, true);
                   xhttp2.send();
                 }, 250);
