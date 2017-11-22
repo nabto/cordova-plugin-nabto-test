@@ -582,12 +582,32 @@ exports.defineAutoTests = function () {
                     assertOk(error, done, "streamRead");
                     var string = "";
                     for (var i = 0; i < data.length; i++) {
-                      string += String.fromCharCode(data[i])
+                      string += String.fromCharCode(data[i]);
                     }
                     expect(string).toBe('Hello World\n');
-                    nabto.streamClose(stream, function(error) {
-                      assertOk(error, done, "streamClose");
-                      done();
+                    nabto.streamWrite(stream, "1234567890\n", function(error) {
+                      assertOk(error, done, "streamWrite");
+                      nabto.streamRead(stream, 4, function(error, data) {
+                        assertOk(error, done, "streamRead");
+                        expect(data.length).toBe(4);
+                        var string = "";
+                        for (var i = 0; i < data.length; i++){
+                          string += String.fromCharCode(data[i]);
+                        }
+                        expect(string).toBe("1234");
+                        nabto.streamRead(stream, 100, function(error, data) {
+                          assertOk(error, done, "streamRead");
+                          var string = "";
+                          for (var i = 0; i < data.length; i++){
+                            string += String.fromCharCode(data[i]);
+                          }
+                          expect(string).toBe("567890\n");
+                          nabto.streamClose(stream, function(error) {
+                            assertOk(error, done, "streamClose");
+                            done();
+                          });
+                        });
+                      });
                     });
                   });
                 });
