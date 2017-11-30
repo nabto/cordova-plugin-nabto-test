@@ -558,36 +558,42 @@ exports.defineAutoTests = function () {
     });
   });
 
+
+  it('should have a global nabtoExp object', function() {
+    expect(nabtoExp).toBeDefined();
+    expect(nabtoExp.streamOpen).toBeDefined();
+  });
+
   it('can open stream', function(done) {
     nabto.shutdown(function(error) { // clear session singleton to ensure working profile is used
       assertOk(error, done, "shutdown");
       nabto.startupAndOpenProfile('guest', 'blank', function(error) {
         assertOk(error, done, "startupAndOpenProfile");
-        nabto.streamOpen("streamdemo.nabto.net", function(error, stream) {
+        nabtoExp.streamOpen("streamdemo.nabto.net", function(error, stream) {
           assertOk(error, done, "streamOpen");
-          nabto.streamConnectionType(stream, function(error, streamType) {
+          nabtoExp.streamConnectionType(stream, function(error, streamType) {
             assertOk(error, done, "streamConnectionType");
-            nabto.streamWrite(stream, "echo\n", function(error) {
+            nabtoExp.streamWrite(stream, "echo\n", function(error) {
               assertOk(error, done, "streamWrite");
-              nabto.streamRead(stream, 100, function(error,data) {
+              nabtoExp.streamRead(stream, 100, function(error,data) {
                 assertOk(error, done, "streamStartReading");
                 var string = "";
                 for (var i = 0; i < data.length; i++) {
                   string += String.fromCharCode(data[i])
                 }
                 expect(string).toBe('+\n');
-                nabto.streamWrite(stream, "Hello World\n", function(error) {
+                nabtoExp.streamWrite(stream, "Hello World\n", function(error) {
                   assertOk(error, done, "streamWrite");
-                  nabto.streamRead(stream, 100, function(error,data){
+                  nabtoExp.streamRead(stream, 100, function(error,data){
                     assertOk(error, done, "streamRead");
                     var string = "";
                     for (var i = 0; i < data.length; i++) {
                       string += String.fromCharCode(data[i]);
                     }
                     expect(string).toBe('Hello World\n');
-                    nabto.streamWrite(stream, "1234567890\n", function(error) {
+                    nabtoExp.streamWrite(stream, "1234567890\n", function(error) {
                       assertOk(error, done, "streamWrite");
-                      nabto.streamRead(stream, 4, function(error, data) {
+                      nabtoExp.streamRead(stream, 4, function(error, data) {
                         assertOk(error, done, "streamRead");
                         expect(data.length).toBe(4);
                         var string = "";
@@ -595,14 +601,14 @@ exports.defineAutoTests = function () {
                           string += String.fromCharCode(data[i]);
                         }
                         expect(string).toBe("1234");
-                        nabto.streamRead(stream, 100, function(error, data) {
+                        nabtoExp.streamRead(stream, 100, function(error, data) {
                           assertOk(error, done, "streamRead");
                           var string = "";
                           for (var i = 0; i < data.length; i++){
                             string += String.fromCharCode(data[i]);
                           }
                           expect(string).toBe("567890\n");
-                          nabto.streamClose(stream, function(error) {
+                          nabtoExp.streamClose(stream, function(error) {
                             assertOk(error, done, "streamClose");
                             done();
                           });
@@ -622,7 +628,7 @@ exports.defineAutoTests = function () {
   it('handles offline stream host and retrieves correct error code ', function(done) {
     nabto.startupAndOpenProfile('guest', 'blank', function(error) {
       assertOk(error, done, "startupAndOpenProfile");
-      nabto.streamOpen(new Date().getMilliseconds() + "veryoffline.nabto.net", function(error, stream) {
+      nabtoExp.streamOpen(new Date().getMilliseconds() + "veryoffline.nabto.net", function(error, stream) {
         expect(error).toBeDefined();
         expect(error.category).toBe(NabtoError.Category.API);
         expect(error.code).toBe(NabtoError.Code.API_CONNECT_TO_HOST_FAILED);
@@ -634,7 +640,7 @@ exports.defineAutoTests = function () {
   it('handles empty stream host input', function(done) {
     nabto.startupAndOpenProfile('guest', 'blank', function(error) {
       assertOk(error, done, "startupAndOpenProfile");
-      nabto.streamOpen("", function(error, tunnel) {
+      nabtoExp.streamOpen("", function(error, tunnel) {
         expect(error).toBeDefined();
         expect(error.category).toBe(NabtoError.Category.WRAPPER);
         expect(error.code).toBe(NabtoError.Code.CDV_INVALID_ARG);
@@ -645,7 +651,7 @@ exports.defineAutoTests = function () {
 
   it('handles get connection type on an invalid stream', function(done) {
     nabto.startupAndOpenProfile('guest', 'blank', function(error) {
-      nabto.streamConnectionType("foo", function(error) {
+      nabtoExp.streamConnectionType("foo", function(error) {
         expect(error).toBeDefined();
         done();
       });
