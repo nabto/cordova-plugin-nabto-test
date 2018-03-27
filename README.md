@@ -1,4 +1,4 @@
-# Unit tests for Nabto's Cordova Plugin
+# Tests for Nabto's Cordova Plugin
 
 Apparently Cordova no longer supports a sub-project for tests, so the Cordova Nabto plugin tests have been moved to this separate repo.
 

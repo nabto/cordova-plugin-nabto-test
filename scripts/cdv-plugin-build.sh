@@ -6,7 +6,7 @@ PLATFORM=$1
 TARGET=$2
 
 PROJ=cordova-test
-DIR=~/projects/$PROJ
+DIR=~/projects/$PROJ-2
 PLUGIN_PATH=~/git/cordova-plugin-nabto
 PLUGIN_TEST_PATH=~/git/cordova-plugin-nabto-tests
 
@@ -15,8 +15,14 @@ OPTIONAL_IOS_CLIENT_PATH=~/svn/trunk/nabto/src/app/client/ios2.0/NabtoClient/Nab
 OPTIONAL_ANDROID_CLIENT_PATH=~/git/android-client-api/src/main/java/com/nabto/api
 
 if [ -z "$PLATFORM" ]; then
-   echo "Usage: $0 <platform> [clean|npm|<tar ball from jenkins>]"
+   echo "Usage: $0 <platform> [nuke|npm|<tar ball from jenkins>]"
    exit 1
+fi
+
+if [ "$PLATFORM" == "android" ]; then
+    VERSION=6.3.0
+else
+    VERSION=latest
 fi
 
 if [ ! -z "$TARGET" ]; then
@@ -30,9 +36,12 @@ function createProject() {
         mkdir -p $DIR
         cd $DIR
         cordova create $DIR com.example.$id $PROJ
-        cordova plugin add https://github.com/maverickmishra/cordova-plugin-test-framework.git
+#        cordova plugin add http://git-wip-us.apache.org/repos/asf/cordova-plugin-test-framework.git
+        cordova plugin add https://github.com/apache/cordova-plugin-test-framework
+#        cordova plugin add https://github.com/maverickmishra/cordova-plugin-test-framework.git
         cordova plugin add cordova-plugin-device
         cordova plugin add cordova-plugin-file
+	npm install android-versions --save
         local f=`mktemp`
         cat $DIR/config.xml | sed 's/index.html/cdvtests\/index.html/' > $f
         cp $f $DIR/config.xml
@@ -100,6 +109,7 @@ function installDevPlugins() {
     }
     
     if [ "$PLATFORM" == "ios" ]; then
+        pwd
         echo 'OTHER_LDFLAGS = -force_load $(BUILT_PRODUCTS_DIR)/libCordova.a -lstdc++' >> platforms/ios/cordova/build.xcconfig
     fi
 }
@@ -147,17 +157,17 @@ function buildAndRun() {
     if [[ "$(isPlatformInstalled $PLATFORM)" != "1" ]]; then
         echo "$PLATFORM missing, adding"
         time {
-            cordova platform add $PLATFORM@latest
+            cordova platform add $PLATFORM@$VERSION
         }
         if [ "$PLATFORM" == "ios" ]; then
             # work around replace bug
-            PWD=`pwd`
-            cd $PWD/platforms/ios/cordova
+            pushd . > /dev/null
+            cd platforms/ios/cordova
             npm install ios-sim@latest
-            cd $PWD
+            popd > /dev/null
         fi
     fi
-    
+
     uninstallPlugins
     installPlugins
     

@@ -275,6 +275,30 @@ exports.defineAutoTests = function () {
       });
     });
     
+    it('shuts down nabto immediately even if in progress rpc invoke times out', function(done) {
+      done();
+      /*
+      var interfaceXml = "<unabto_queries><query name='wind_speed.json' id='2'><request></request><response format='json'><parameter name='speed_m_s' type='uint32'/></response></query></unabto_queries>";
+      nabto.shutdown(function(error) { // clear session singleton to ensure working profile is used
+        nabto.startupAndOpenProfile(function() {
+          nabto.rpcSetDefaultInterface(interfaceXml, function(error, result) {
+            assertOk(error, done, "rpcSetDefaultInterface");
+            nabto.prepareInvoke(["www.google.com"], function(error) {
+              assertOk(error, done, "prepareInvoke");
+              nabto.rpcInvoke("nabto://www.google.com/wind_speed.json?", function(error, result) {
+	      });
+              setTimeout(function() {
+                nabto.shutdown(function(error) {
+                  assertOk(error, done, "shutdown");
+                  done();
+                }, 250);
+              });
+            });
+          });
+        });
+      });*/
+    });
+    
     it('returns json error when invoking rpc without interface being set', function(done) {
       nabto.shutdown(function() { // clear session singleton to ensure working profile is used
         nabto.startupAndOpenProfile(function() {
@@ -575,7 +599,7 @@ exports.defineAutoTests = function () {
             xhttp.onreadystatechange = function() {
               if (xhttp.readyState !== 4) { return; }
               expect(xhttp.status).toBe(200);
-              expect(xhttp.responseText).toContain('Serve a large file');
+              expect(xhttp.responseText).toContain('stream demo');
               xhttp.abort();
               
               nabto.tunnelClose(tunnel, function(error) {
