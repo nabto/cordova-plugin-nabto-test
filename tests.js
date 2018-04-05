@@ -38,6 +38,8 @@ function assertOk(error, done, operation) {
 
 function xdescribe(title, func) {}
 
+function itx(name, func) {}
+
 exports.defineAutoTests = function () {
 
   document.addEventListener("pause", function() {
@@ -274,36 +276,42 @@ exports.defineAutoTests = function () {
         });
       });
     });
-    
+
     it('shuts down nabto immediately even if in progress rpc invoke times out', function(done) {
-      done();
-      /*
       var interfaceXml = "<unabto_queries><query name='wind_speed.json' id='2'><request></request><response format='json'><parameter name='speed_m_s' type='uint32'/></response></query></unabto_queries>";
-      nabto.shutdown(function(error) { // clear session singleton to ensure working profile is used
-        nabto.startupAndOpenProfile(function() {
-          nabto.rpcSetDefaultInterface(interfaceXml, function(error, result) {
-            assertOk(error, done, "rpcSetDefaultInterface");
-            nabto.prepareInvoke(["www.google.com"], function(error) {
-              assertOk(error, done, "prepareInvoke");
-              nabto.rpcInvoke("nabto://www.google.com/wind_speed.json?", function(error, result) {
-	      });
-              setTimeout(function() {
-                nabto.shutdown(function(error) {
-                  assertOk(error, done, "shutdown");
-                  done();
+      nabto.shutdown(function() { // clear session singleton to ensure working profile is used
+        nabto.startupAndOpenProfile(function(error) {
+          expect(error).not.toBeDefined();
+          nabto.versionString(function(error, version) {
+            console.log("Nabto SDK version " + version);
+            nabto.rpcSetDefaultInterface(interfaceXml, function(error, result) {
+              assertOk(error, done, "rpcSetDefaultInterface");
+              nabto.prepareInvoke(["www.google.com"], function(error) {
+                assertOk(error, done, "prepareInvoke");
+                nabto.rpcInvoke("nabto://www.google.com/wind_speed.json?", function(error, result) {
+                  //   times out after 19 seconds
+                });
+                setTimeout(function() {
+                  console.log(" *** invoking shutdown ");
+                  nabto.shutdown(function(error) {
+                    assertOk(error, done, "shutdown");
+                    done();
+                  });
                 }, 250);
               });
             });
           });
         });
-      });*/
-    });
+      });
+    }, 1000);
     
     it('returns json error when invoking rpc without interface being set', function(done) {
       nabto.shutdown(function() { // clear session singleton to ensure working profile is used
-        nabto.startupAndOpenProfile(function() {
+//        alert('shutdown complete');
+        nabto.startupAndOpenProfile(function(error) {
+          expect(error).not.toBeDefined();
           nabto.prepareInvoke(['demo.nabto.net'], function(error, result) {
-            nabto.rpcInvoke('nabto://demo.nabto.net/test.json', function(error, result) {
+            nabto.rpcInvoke('nabto://demo.nabto.net/wind_speed.json', function(error, result) {
               expect(error).toBeDefined();
               expect(error.code).toBe(NabtoError.Code.P2P_RPC_INTERFACE_NOT_SET);
               expect(result).not.toBeDefined();
