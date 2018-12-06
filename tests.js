@@ -340,18 +340,20 @@ exports.defineAutoTests = function () {
       });
     });
 
-    it('returns a device exception when rpc invoking an unexisting function on device', function(done) {
+    it('returns a device exception code when rpc invoking an unexisting function on device', function(done) {
       var interfaceXml = "<unabto_queries><query name='wind_speed.json' id='87'><request></request><response format='json'><parameter name='speed_m_s' type='uint32'/></response></query></unabto_queries>";
       nabto.shutdown(function(error) { // clear session singleton to ensure working profile is used
         nabto.startupAndOpenProfile(function() {
           nabto.rpcSetDefaultInterface(interfaceXml, function(error, result) {
             assertOk(error, done, "rpcSetDefaultInterface");
-            nabto.prepareInvoke(["demo.nabto.net"], function(error) {});
-            nabto.rpcInvoke('nabto://demo.nabto.net/wind_speed.json', function(error, result) {
-              expect(error).toBeDefined();
-              expect(error.code).toBe(NabtoError.Code.EXC_INV_QUERY_ID);
-              expect(result).not.toBeDefined();
-              done();
+            nabto.prepareInvoke(["demo.nabto.net"], function(error) {
+              assertOk(error, done, "prepareInvoke");
+              nabto.rpcInvoke('nabto://demo.nabto.net/wind_speed.json', function(error, result) {
+                expect(error).toBeDefined();
+                expect(error.code).toBe(NabtoError.Code.EXC_INV_QUERY_ID);
+                expect(result).not.toBeDefined();
+                done();
+              });
             });
           });
         });
