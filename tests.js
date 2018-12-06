@@ -588,7 +588,50 @@ exports.defineAutoTests = function () {
       });
     });
   });
+
+  it('sets local psk with valid id and psk', function(done) {
+    nabto.startupAndOpenProfile('guest', 'blank', function(error) {
+      assertOk(error, done, "startupAndOpenProfile");
+      nabto.setLocalConnectionPsk("psk-test-1.test.nabto.net", "1a:0b:00:00:00:00:00:00:00:00:00:00:00:00:00:ff", "0a0b000000000000000000000000000f", function(error) {
+        assertOk(error, done, "setLocalConnectionPsk");
+        done();
+        });
+    });
+  });
+  
+  it('fails to set local psk with invalid id size', function(done) {
+    nabto.startupAndOpenProfile('guest', 'blank', function(error) {
+      assertOk(error, done, "startupAndOpenProfile");
+      nabto.setLocalConnectionPsk("psk-test-1.test.nabto.net", "1a:0b:00:00:00:00:00:00:00:00:00:00:00:00:00", "0a0b000000000000000000000000000f", function(error) {
+        expect(error).toBeDefined();
+        expect(error.code).toBe(NabtoError.Code.CDV_INVALID_ARG);
+        done();
+        });
+    });
+  });
    
+  it('fails to set local psk with invalid psk size', function(done) {
+    nabto.startupAndOpenProfile('guest', 'blank', function(error) {
+      assertOk(error, done, "startupAndOpenProfile");
+      nabto.setLocalConnectionPsk("psk-test-1.test.nabto.net", "1a:0b:00:00:00:00:00:00:00:00:00:00:00:00:00:ff", "0b000000000000000000000000000f", function(error) {
+        expect(error).toBeDefined();
+        expect(error.code).toBe(NabtoError.Code.CDV_INVALID_ARG);
+        done();
+        });
+    });
+  });
+
+  it('fails to set local psk with invalid psk id', function(done) {
+    nabto.startupAndOpenProfile('guest', 'blank', function(error) {
+      assertOk(error, done, "startupAndOpenProfile");
+      nabto.setLocalConnectionPsk("psk-test-1.test.nabto.net", "qq:0b:00:00:00:00:00:00:00:00:00:00:00:00:00:ff", "0a0b000000000000000000000000000f", function(error) {
+        expect(error).toBeDefined();
+        expect(error.code).toBe(NabtoError.Code.API_ERROR);
+        done();
+        });
+    });
+  });
+  
   it('opens a tunnel to demo host with valid parameters and closes tunnel again', function(done) {
     nabto.shutdown(function(error) { // clear session singleton to ensure working profile is used
       assertOk(error, done, "shutdown");
