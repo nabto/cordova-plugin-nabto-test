@@ -11,7 +11,7 @@ PLUGIN_PATH=~/git/cordova-plugin-nabto
 PLUGIN_TEST_PATH=~/git/cordova-plugin-nabto-tests
 
 # patch plugin with source from these locations if they exist
-OPTIONAL_IOS_CLIENT_PATH=~/svn/trunk/nabto/src/app/client/ios2.0/NabtoClient/NabtoClient
+OPTIONAL_IOS_CLIENT_PATH=~/git/nabto-ios-client/NabtoClient_IGNORE
 OPTIONAL_ANDROID_CLIENT_PATH=~/git/android-client-api/src/main/java/com/nabto/api
 
 if [ -z "$PLATFORM" ]; then
@@ -46,7 +46,6 @@ function createProject() {
         cat $DIR/config.xml | sed 's/index.html/cdvtests\/index.html/' > $f
         cp $f $DIR/config.xml
         rm $f
-        
     }
 }
 
@@ -171,11 +170,12 @@ function buildAndRun() {
     uninstallPlugins
     installPlugins
     
-    cordova build --emulator $PLATFORM
     
     if [ "$PLATFORM" == "ios" ]; then
-        cordova run ios --target iPad-Air-2
+        cordova --buildFlag='-UseModernBuildSystem=0' build --emulator $PLATFORM
+        cordova run ios --buildFlag='-UseModernBuildSystem=0' --target iPad-Air-2
     else
+        cordova build --emulator $PLATFORM
         cordova emulate $PLATFORM
     fi
 }

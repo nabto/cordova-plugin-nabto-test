@@ -340,18 +340,20 @@ exports.defineAutoTests = function () {
       });
     });
 
-    it('returns a device exception when rpc invoking an unexisting function on device', function(done) {
+    it('returns a device exception code when rpc invoking an unexisting function on device', function(done) {
       var interfaceXml = "<unabto_queries><query name='wind_speed.json' id='87'><request></request><response format='json'><parameter name='speed_m_s' type='uint32'/></response></query></unabto_queries>";
       nabto.shutdown(function(error) { // clear session singleton to ensure working profile is used
         nabto.startupAndOpenProfile(function() {
           nabto.rpcSetDefaultInterface(interfaceXml, function(error, result) {
             assertOk(error, done, "rpcSetDefaultInterface");
-            nabto.prepareInvoke(["demo.nabto.net"], function(error) {});
-            nabto.rpcInvoke('nabto://demo.nabto.net/wind_speed.json', function(error, result) {
-              expect(error).toBeDefined();
-              expect(error.code).toBe(NabtoError.Code.EXC_INV_QUERY_ID);
-              expect(result).not.toBeDefined();
-              done();
+            nabto.prepareInvoke(["demo.nabto.net"], function(error) {
+              assertOk(error, done, "prepareInvoke");
+              nabto.rpcInvoke('nabto://demo.nabto.net/wind_speed.json', function(error, result) {
+                expect(error).toBeDefined();
+                expect(error.code).toBe(NabtoError.Code.EXC_INV_QUERY_ID);
+                expect(result).not.toBeDefined();
+                done();
+              });
             });
           });
         });
@@ -588,7 +590,62 @@ exports.defineAutoTests = function () {
       });
     });
   });
+
+  it('sets local psk with valid id and psk', function(done) {
+    nabto.startupAndOpenProfile('guest', 'blank', function(error) {
+      assertOk(error, done, "startupAndOpenProfile");
+      nabto.setLocalConnectionPsk("psk-test-1.test.nabto.net", "1a:0b:00:00:00:00:00:00:00:00:00:00:00:00:00:ff", "0a0b000000000000000000000000000f", function(error) {
+        assertOk(error, done, "setLocalConnectionPsk");
+        done();
+        });
+    });
+  });
+  
+  it('fails to set local psk with invalid id size', function(done) {
+    nabto.startupAndOpenProfile('guest', 'blank', function(error) {
+      assertOk(error, done, "startupAndOpenProfile");
+      nabto.setLocalConnectionPsk("psk-test-1.test.nabto.net", "1a:0b:00:00:00:00:00:00:00:00:00:00:00:00:00", "0a0b000000000000000000000000000f", function(error) {
+        expect(error).toBeDefined();
+        expect(error.code).toBe(NabtoError.Code.CDV_INVALID_ARG);
+        done();
+        });
+    });
+  });
    
+  it('fails to set local psk with invalid psk size', function(done) {
+    nabto.startupAndOpenProfile('guest', 'blank', function(error) {
+      assertOk(error, done, "startupAndOpenProfile");
+      nabto.setLocalConnectionPsk("psk-test-1.test.nabto.net", "1a:0b:00:00:00:00:00:00:00:00:00:00:00:00:00:ff", "0b000000000000000000000000000f", function(error) {
+        expect(error).toBeDefined();
+        expect(error.code).toBe(NabtoError.Code.CDV_INVALID_ARG);
+        done();
+        });
+    });
+  });
+
+  it('fails to set local psk with invalid psk id', function(done) {
+    nabto.startupAndOpenProfile('guest', 'blank', function(error) {
+      assertOk(error, done, "startupAndOpenProfile");
+      nabto.setLocalConnectionPsk("psk-test-1.test.nabto.net", "qq:0b:00:00:00:00:00:00:00:00:00:00:00:00:00:ff", "0a0b000000000000000000000000000f", function(error) {
+        expect(error).toBeDefined();
+        expect(error.code).toBe(NabtoError.Code.API_ERROR);
+        done();
+        });
+    });
+  });
+
+  it('fails to set local psk with invalid psk', function(done) {
+    nabto.startupAndOpenProfile('guest', 'blank', function(error) {
+      assertOk(error, done, "startupAndOpenProfile");
+      nabto.setLocalConnectionPsk("psk-test-1.test.nabto.net", "2a:0b:00:00:00:00:00:00:00:00:00:00:00:00:00:ff", "0a0bww0000000000000000000000000f", function(error) {
+        expect(error).toBeDefined();
+        expect(error.code).toBe(NabtoError.Code.API_ERROR);
+        done();
+        });
+    });
+  });
+  
+
   it('opens a tunnel to demo host with valid parameters and closes tunnel again', function(done) {
     nabto.shutdown(function(error) { // clear session singleton to ensure working profile is used
       assertOk(error, done, "shutdown");
@@ -688,6 +745,53 @@ exports.defineAutoTests = function () {
     });
   });
 
+  it('sets send window size', function(done) {
+    nabto.startupAndOpenProfile('guest', 'blank', function(error) {
+      assertOk(error, done, "startupAndOpenProfile");
+      nabto.tunnelOpenTcp("streamdemo.nabto.net", 80, function(error, tunnel) {
+        nabto.tunnelSetSendWindowSize(tunnel, 27, function(error) {
+          assertOk(error, done, "tunnelSetSendWindowSize");
+          done();
+        });
+      });
+    });
+  });
+
+  it('fails setting bad send window size', function(done) {
+    nabto.startupAndOpenProfile('guest', 'blank', function(error) {
+      assertOk(error, done, "startupAndOpenProfile");
+      nabto.tunnelOpenTcp("streamdemo.nabto.net", 80, function(error, tunnel) {
+        nabto.tunnelSetSendWindowSize(tunnel, "8foo7", function(error) {
+          assertErrorIsInvalidInput(error);
+          done();
+        });
+      });
+    });
+  });
+
+  it('sets recv window size', function(done) {
+    nabto.startupAndOpenProfile('guest', 'blank', function(error) {
+      assertOk(error, done, "startupAndOpenProfile");
+      nabto.tunnelOpenTcp("streamdemo.nabto.net", 80, function(error, tunnel) {
+        nabto.tunnelSetRecvWindowSize(tunnel, 27, function(error) {
+          assertOk(error, done, "tunnelSetRecvWindowSize");
+          done();
+        });
+      });
+    });
+  });
+
+  it('fails setting bad recv window size', function(done) {
+    nabto.startupAndOpenProfile('guest', 'blank', function(error) {
+      assertOk(error, done, "startupAndOpenProfile");
+      nabto.tunnelOpenTcp("streamdemo.nabto.net", 80, function(error, tunnel) {
+        nabto.tunnelSetRecvWindowSize(tunnel, "8foo7", function(error) {
+          assertErrorIsInvalidInput(error);
+          done();
+        });
+      });
+    });
+  });
 
   it('handles get port on an invalid tunnel', function(done) {
     nabto.startupAndOpenProfile('guest', 'blank', function(error) {
@@ -703,7 +807,7 @@ exports.defineAutoTests = function () {
       });
     });
   });
-    
+
   it('handles get state on an invalid tunnel', function(done) {
     nabto.startupAndOpenProfile('guest', 'blank', function(error) {
       nabto.tunnelState("foo", function(error) {
