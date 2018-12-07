@@ -745,6 +745,53 @@ exports.defineAutoTests = function () {
     });
   });
 
+  it('sets send window size', function(done) {
+    nabto.startupAndOpenProfile('guest', 'blank', function(error) {
+      assertOk(error, done, "startupAndOpenProfile");
+      nabto.tunnelOpenTcp("streamdemo.nabto.net", 80, function(error, tunnel) {
+        nabto.tunnelSetSendWindowSize(tunnel, 27, function(error) {
+          assertOk(error, done, "tunnelSetSendWindowSize");
+          done();
+        });
+      });
+    });
+  });
+
+  it('fails setting bad send window size', function(done) {
+    nabto.startupAndOpenProfile('guest', 'blank', function(error) {
+      assertOk(error, done, "startupAndOpenProfile");
+      nabto.tunnelOpenTcp("streamdemo.nabto.net", 80, function(error, tunnel) {
+        nabto.tunnelSetSendWindowSize(tunnel, "8foo7", function(error) {
+          assertErrorIsInvalidInput(error);
+          done();
+        });
+      });
+    });
+  });
+
+  it('sets recv window size', function(done) {
+    nabto.startupAndOpenProfile('guest', 'blank', function(error) {
+      assertOk(error, done, "startupAndOpenProfile");
+      nabto.tunnelOpenTcp("streamdemo.nabto.net", 80, function(error, tunnel) {
+        nabto.tunnelSetRecvWindowSize(tunnel, 27, function(error) {
+          assertOk(error, done, "tunnelSetRecvWindowSize");
+          done();
+        });
+      });
+    });
+  });
+
+  it('fails setting bad recv window size', function(done) {
+    nabto.startupAndOpenProfile('guest', 'blank', function(error) {
+      assertOk(error, done, "startupAndOpenProfile");
+      nabto.tunnelOpenTcp("streamdemo.nabto.net", 80, function(error, tunnel) {
+        nabto.tunnelSetRecvWindowSize(tunnel, "8foo7", function(error) {
+          assertErrorIsInvalidInput(error);
+          done();
+        });
+      });
+    });
+  });
 
   it('handles get port on an invalid tunnel', function(done) {
     nabto.startupAndOpenProfile('guest', 'blank', function(error) {
@@ -760,7 +807,7 @@ exports.defineAutoTests = function () {
       });
     });
   });
-    
+
   it('handles get state on an invalid tunnel', function(done) {
     nabto.startupAndOpenProfile('guest', 'blank', function(error) {
       nabto.tunnelState("foo", function(error) {
